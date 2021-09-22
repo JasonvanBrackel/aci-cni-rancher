@@ -1,0 +1,116 @@
+= ACI/CNI and RKE
+
+== Version Compatibility
+
+The version of ACI, ACI CNI and RKE used for this documentation are as follows.
+
+[cols="1,1,1"]
+|===
+| Project
+| Purpose
+| Version
+
+| link:https://github.com/noironetworks/aci-containers[ACI CNI Plugin]
+| Installed for Upgrade Testing
+| link:https://github.com/noironetworks/aci-containers/releases/tag/5.1.3.4[5.1.3.4]
+
+| ACI CNI Plugin
+| Fresh Install and Upgradee Tesitng
+| link:https://https://github.com/noironetworks/aci-containers/releases/tag/5.2.1.1[5.2.1.1]
+
+| link:https://https://www.cisco.com/c/en/us/solutions/data-center-virtualization/application-centric-infrastructure/index.html[ACI]
+| Fresh Install and Upgrade Testing
+| 5.2(e) (latest pre-prod build at time of testing)
+
+| ACI 
+| Upgrade Testing
+| 5.1(1.20201117)
+
+| link:https://github.com/rancher/rke[RKE]
+| ACI/CNI Conformance Testing
+| link:https://github.com/rancher/rke/releases/v1.2.11[1.2.11]
+
+| link:https://github.com/noironetworks/acc-provision[acc-provision]
+| Tool for creating Kubernetes Configuration Files for ACI-CNI
+| https://github.com/noironetworks/acc-provision/releases/tag/5.2.1.1[5.2.1.1]
+|===
+
+NOTE: We believe that earlier and later versions of ACI 5.2(x) including 5.2(2) will work.  We used the lab we had available given the timeliness required for this work. We also believe this process will work with the latest versions of acc-provision including 5.2.3.0 and RKE including 1.3.1.  We will follow up with this testing and update this documentation accordingly.
+
+== Install ACI-CNI 5.2 with RKE 1.2.11
+
+* [ ] Generate a new cni-config with the `acc-provision` tool
+[source,sh]
+----
+acc-provision --flavor RKE-1.2.3 -a -u adminuser -p adminpassword -c rke-c4f2.yaml -o cni-rke.yaml
+----
+* [ ] Copy the output of the cni-rke.yaml into the cluster.yml file or template that you use with the rke command
+* [ ] Change the ACI CNI images in `system_images` to the ACI CNI images for 5.2.
+[source,sh]
+----
+system_images:
+  aci_cni_deploy_container: noiro/cnideploy:5.2.1.1.a444194
+  aci_host_container: noiro/aci-containers-host:5.2.1.1.a444194
+  aci_opflex_container: noiro/opflex:5.2.1.1.a444194
+  aci_mcast_container: noiro/opflex:5.2.1.1.a444194
+  aci_ovs_container: noiro/openvswitch:5.2.1.1.a444194
+  aci_controller_container: noiro/aci-containers-controller:5.2.1.1.a444194
+----
+* [ ] Provision the cluster
+
+[source,sh]
+----
+./rke_1.2.11 up
+----
+*At this point the cluster is provisioned with ACI CNI 5.2 containers, but will be non-functioning as the images are not aligned with the CRDs that we have.*
+
+* [ ] Create a new cni config of type kubernetes-1.20
+[source,sh]
+----
+acc-provision --flavor kubernetes-1.20 -c rke-c4f2.yaml -o cni-rke-update.yaml
+----
+* [ ] Apply this config to the cluster.
+[source,sh]
+----
+kubectl apply -f cni-rke-update.yaml
+----
+ 
+
+== Upgrade an existing RKE Cluster to ACI-CNI 5.2
+* [ ] Gather your existing RKE configuration.
+* [ ] Use the acc-provision tool to create a new RKE Configuration file.
+[source,sh]
+----
+acc-provision --flavor RKE-1.2.3 -a -u adminuser -p adminpassword -c rke-c4f2.yaml -o cni-rke.yaml
+----
+* [ ] Copy the new configuration lines specific to ACI CNI into your existing cluster configuration file.
+* [ ] Change the ACI CNI images in `system_images` in your cluster configuration file to the ACI CNI images for 5.2.
+[source,sh]
+----
+system_images:
+  aci_cni_deploy_container: noiro/cnideploy:5.2.1.1.a444194
+  aci_host_container: noiro/aci-containers-host:5.2.1.1.a444194
+  aci_opflex_container: noiro/opflex:5.2.1.1.a444194
+  aci_mcast_container: noiro/opflex:5.2.1.1.a444194
+  aci_ovs_container: noiro/openvswitch:5.2.1.1.a444194
+  aci_controller_container: noiro/aci-containers-controller:5.2.1.1.a444194
+----
+* [ ] Re-provision / upgrade the cluster
+
+[source,sh]
+----
+./rke_1.2.11 up
+----
+*At this point the cluster is provisioned with ACI CNI 5.2 containers, but will be non-functioning as the images are not aligned with the CRDs that we have.*
+
+* [ ] Create a new cni config of type kubernetes-1.20
+
+[source,sh]
+----
+acc-provision --flavor kubernetes-1.20 -c rke-c4f2.yaml -o cni-rke-update.yaml
+----
+* [ ] Apply this config to the cluster.
+[source,sh]
+----
+kubectl apply -f cni-rke-update.yaml
+----
