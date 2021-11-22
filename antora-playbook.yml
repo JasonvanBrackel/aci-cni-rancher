@@ -1,0 +1,11 @@
+site:
+  title: Antora Docs
+  start_page: component-b::index.adoc
+content:
+  sources:
+  - url: git@github.com:JasonvanBrackel/aci-cni-rancher.git
+    branches: HEAD
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
